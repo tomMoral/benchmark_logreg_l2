@@ -19,11 +19,18 @@ class Solver(BaseSolver):
         'arXiv preprint arXiv:1707.03003 (2017).'
     ]
 
+    parameters = {
+        'step_type': [
+            'bb',
+            'fixed',
+        ]
+    }
+
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
         # Reponse vector used for tick logreg must be {1.0, -1.0}
         self.y[y == 0] = -1.0
-        self.clf = SVRG(tol=1e-16, verbose=False, step_type='fixed')
+        self.clf = SVRG(tol=1e-16, verbose=False, step_type=self.step_type)
 
     def run(self, n_iter):
         model = ModelLogReg(fit_intercept=False).fit(self.X, self.y)

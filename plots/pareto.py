@@ -47,7 +47,7 @@ class Plot(BasePlot):
             tags += ["pareto"] if s in frontier else []
             traces.append(dict(x=[speed[s]], y=[solved[s]], label=s, tags=tags,
                                marker_size=16, **self.get_style(s)))
-        traces.append(dict(x=x, y=y, label="Pareto frontier",
+        traces.append(dict(x=x, y=y, label="Pareto frontier", tags=["all"],
                            color=(0, 0, 0, .5), marker=0, marker_size=0))
         return traces
 

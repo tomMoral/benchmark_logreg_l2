@@ -1,3 +1,5 @@
+from collections import Counter
+
 from benchopt import BasePlot
 
 import numpy as np
@@ -40,9 +42,12 @@ class Plot(BasePlot):
         gpu = set()
         if "version-cuda" in df:
             gpu = set(df.dropna(subset=["version-cuda"])["solver_name"])
+        # A library is a tag only when it has several solvers.
+        n_base = Counter(s.split("[")[0] for s in speed)
         traces = []
         for s in speed:
-            tags = [s.split("[")[0]]
+            base = s.split("[")[0]
+            tags = [base] if n_base[base] > 1 else []
             tags += ["GPU"] if s in gpu else []
             tags += ["pareto"] if s in frontier else []
             traces.append(dict(x=[speed[s]], y=[solved[s]], label=s, tags=tags,

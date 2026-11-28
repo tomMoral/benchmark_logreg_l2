@@ -28,18 +28,25 @@ class Plot(BasePlot):
 
     def plot(self, df, tolerance):
         solved, speed, _ = _reliability_speed(df, tolerance)
-        traces = [
-            dict(x=[speed[s]], y=[solved[s]], label=s, marker_size=16,
-                 **self.get_style(s))
-            for s in speed
-        ]
         # The frontier links the solvers that no other is both faster and
         # more reliable than, as a staircase.
-        x, y = [], []
+        x, y, frontier = [], [], []
         for s in sorted(speed, key=speed.get):
             if not y or solved[s] > y[-1]:
                 x += [speed[s], speed[s]]
                 y += [y[-1] if y else solved[s], solved[s]]
+                frontier.append(s)
+        # Runs on a GPU node record their CUDA version.
+        gpu = set()
+        if "version-cuda" in df:
+            gpu = set(df.dropna(subset=["version-cuda"])["solver_name"])
+        traces = []
+        for s in speed:
+            tags = [s.split("[")[0]]
+            tags += ["GPU"] if s in gpu else []
+            tags += ["pareto"] if s in frontier else []
+            traces.append(dict(x=[speed[s]], y=[solved[s]], label=s, tags=tags,
+                               marker_size=16, **self.get_style(s)))
         traces.append(dict(x=x, y=y, label="Pareto frontier",
                            color=(0, 0, 0, .5), marker=0, marker_size=0))
         return traces
@@ -50,4 +57,5 @@ class Plot(BasePlot):
             "title": f"Problems solved to {tolerance:g} vs speed",
             "xlabel": f"Median time relative to {ref}",
             "ylabel": "Fraction of the problems solved",
+            "highlight": "pareto",
         }

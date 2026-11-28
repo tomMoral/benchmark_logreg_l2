@@ -2,23 +2,16 @@ from benchopt import BasePlot
 
 import numpy as np
 
-from benchmark_utils.summary import TIMEOUT, TOLERANCES, time_to_tolerance
+from benchmark_utils.summary import TOLERANCES, time_to_tolerance
 
 
-def _reliability_speed(df, tolerance, unsolved):
+def _reliability_speed(df, tolerance):
     """Fraction of the problems each solver solves, and its median time
-    relative to the most reliable solver.
-
-    With ``unsolved="excluded"``, the median is over the problems both solve.
-    With ``unsolved="timeout"``, an unsolved problem counts with the time
-    ``TIMEOUT``, and the median is over all the problems the solver ran on.
-    """
+    relative to the most reliable solver, on the problems both solve."""
     times = time_to_tolerance(df, tolerance)
     solved = (times < np.inf).sum() / len(times)
     # The most reliable solver, the fastest one in case of ties.
     ref = min(times.columns, key=lambda s: (-solved[s], times[s].median()))
-    if unsolved == "timeout":
-        times = times.replace(np.inf, TIMEOUT)
     speed = {}
     for solver in times.columns:
         both = (times[solver] < np.inf) & (times[ref] < np.inf)
@@ -31,10 +24,10 @@ def _reliability_speed(df, tolerance, unsolved):
 class Plot(BasePlot):
     name = "Pareto"
     type = "scatter"
-    options = {"tolerance": TOLERANCES, "unsolved": ["excluded", "timeout"]}
+    options = {"tolerance": TOLERANCES}
 
-    def plot(self, df, tolerance, unsolved):
-        solved, speed, _ = _reliability_speed(df, tolerance, unsolved)
+    def plot(self, df, tolerance):
+        solved, speed, _ = _reliability_speed(df, tolerance)
         traces = [
             dict(x=[speed[s]], y=[solved[s]], label=s, marker_size=16,
                  **self.get_style(s))
@@ -51,12 +44,10 @@ class Plot(BasePlot):
                            color=(0, 0, 0, .5), marker=0, marker_size=0))
         return traces
 
-    def get_metadata(self, df, tolerance, unsolved):
-        _, _, ref = _reliability_speed(df, tolerance, unsolved)
-        where = ("unsolved problems at the timeout" if unsolved == "timeout"
-                 else "on the problems both solve")
+    def get_metadata(self, df, tolerance):
+        _, _, ref = _reliability_speed(df, tolerance)
         return {
             "title": f"Problems solved to {tolerance:g} vs speed",
-            "xlabel": f"Median time relative to {ref}, {where}",
+            "xlabel": f"Median time relative to {ref}",
             "ylabel": "Fraction of the problems solved",
         }
